@@ -66,6 +66,7 @@
     <h4>Number of dots</h4>
     <p><span id="loaded"></span></p>
     <p><span id="within"></span></p>
+    <p><span id="percent-within"></span></p>
 
 </div>
 <script>
@@ -74,8 +75,11 @@
 
         const map = L.map('map').setView([39.8, -98.5], 5);
         let ptsWithin;
+        let pctWithin;
         let loadedEle = document.getElementById("loaded");
         let withinEle = document.getElementById("within");
+        let pctWithinEle = document.getElementById("percent-within");
+
 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
             attribution:'&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -115,7 +119,11 @@
 
             ptsWithin = turf.pointsWithinPolygon(placerDotDensityGeoJSON, drawnItemsGeoJSON);
 
+            pctWithin = (ptsWithin.features.length / placerDotDensity.getLayers().length) * 100;
+            pctWithin =  pctWithin.toFixed(1);
+
             withinEle.innerHTML = "Within: " + ptsWithin.features.length;
+            pctWithinEle.innerHTML = "% Within: " + pctWithin + "%";
 
         });
 
@@ -125,12 +133,17 @@
 
             ptsWithin = turf.pointsWithinPolygon(placerDotDensityGeoJSON, drawnItemsGeoJSON);
 
+            pctWithin = (ptsWithin.features.length / placerDotDensity.getLayers().length) * 100;
+            pctWithin =  pctWithin.toFixed(1);
+
             withinEle.innerHTML = "Within: " + ptsWithin.features.length;
+            pctWithinEle.innerHTML = "% Within: " + pctWithin + "%";
 
         });
 
         map.on('draw:deleted', function (e) {
             withinEle.innerHTML = "";
+            pctWithinEle.innerHTML = "";
         });
 
         
