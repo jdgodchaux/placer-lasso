@@ -59,8 +59,8 @@
 
 <div id="map"></div>
 <div class="info-panel">
-    <h4>Number of dots</h4>
-    <p><span id="loaded"></span></p>
+    <h4>Visits</h4>
+    <p><span id="total"></span></p>
     <p><span id="within"></span></p>
     <p><span id="percent-within"></span></p>
 
@@ -72,10 +72,11 @@
         const map = L.map('map').setView([39.8, -98.5], 5);
         let ptsWithin;
         let pctWithin;
-        let loadedEle = document.getElementById("loaded");
+        let totalFT = 0;
+        let withinFT;
+        let totalEle = document.getElementById("total");
         let withinEle = document.getElementById("within");
         let pctWithinEle = document.getElementById("percent-within");
-
 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
             attribution:'&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -110,31 +111,11 @@
         map.on('draw:created', function (e) {
             const layer = e.layer;
             drawnItems.addLayer(layer);
-            const placerDotDensityGeoJSON = placerDotDensity.toGeoJSON();
-            const drawnItemsGeoJSON = drawnItems.toGeoJSON();
-
-            ptsWithin = turf.pointsWithinPolygon(placerDotDensityGeoJSON, drawnItemsGeoJSON);
-
-            pctWithin = (ptsWithin.features.length / placerDotDensity.getLayers().length) * 100;
-            pctWithin =  pctWithin.toFixed(1);
-
-            withinEle.innerHTML = "Within: " + ptsWithin.features.length;
-            pctWithinEle.innerHTML = "Percent Within: " + pctWithin + "%";
-
+            updatePtsWithin();
         });
 
         map.on('draw:edited', function (e) {
-            const placerDotDensityGeoJSON = placerDotDensity.toGeoJSON();
-            const drawnItemsGeoJSON = drawnItems.toGeoJSON();
-
-            ptsWithin = turf.pointsWithinPolygon(placerDotDensityGeoJSON, drawnItemsGeoJSON);
-
-            pctWithin = (ptsWithin.features.length / placerDotDensity.getLayers().length) * 100;
-            pctWithin =  pctWithin.toFixed(1);
-
-            withinEle.innerHTML = "Within: " + ptsWithin.features.length;
-            pctWithinEle.innerHTML = "Percent Within: " + pctWithin + "%";
-
+            updatePtsWithin();
         });
 
         map.on('draw:deleted', function (e) {
@@ -142,8 +123,25 @@
             pctWithinEle.innerHTML = "";
         });
 
-        
+        function updatePtsWithin() {
+            const placerDotDensityGeoJSON = placerDotDensity.toGeoJSON();
+            const drawnItemsGeoJSON = drawnItems.toGeoJSON();
 
+            ptsWithin = turf.pointsWithinPolygon(placerDotDensityGeoJSON, drawnItemsGeoJSON);
+
+            withinFT = 0;
+            for (let i = 0; i < ptsWithin.features.length; i++) {
+                withinFT = withinFT + +(ptsWithin.features[i].properties.foottraffic);
+            }
+
+            pctWithin = (withinFT / totalFT) * 100;
+            pctWithin =  pctWithin.toFixed(1);
+
+            withinEle.innerHTML = "Within: " + withinFT.toLocaleString();
+            pctWithinEle.innerHTML = "Percent Within: " + pctWithin + "%";
+        }
+
+        
         // Import KMLs
         const style = {
             color: 'rgb(94, 99, 229)',
@@ -163,17 +161,15 @@
             layerOptions: {
                 style: style,
                 pointToLayer: function (data, latlng) {
-                    return L.circleMarker(
-                        latlng,
-                        { style: style }
-                    );
+                    totalFT = totalFT + +(data.properties.foottraffic);
+                    return L.circleMarker(latlng, {style: style});
                 }
             }
         });
         control.addTo(map);
         control.loader.on('data:loaded', function (e) {
             placerDotDensity = e.layer;
-            loadedEle.innerHTML = "Loaded: " + placerDotDensity.getLayers().length;
+            totalEle.innerHTML = "Total: " + totalFT.toLocaleString();
         });
 
     }
