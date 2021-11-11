@@ -118,6 +118,10 @@
             updatePtsWithin();
         });
 
+        map.on('draw:editvertex', function (e) {
+            updatePtsWithin();
+        });
+
         map.on('draw:deleted', function (e) {
             withinEle.innerHTML = "";
             pctWithinEle.innerHTML = "";
