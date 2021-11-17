@@ -49,6 +49,9 @@
     .info-panel p {
         margin: 0px 0px 0px 0px; 
     }
+    .info-panel div {
+        margin-bottom: 5px;
+    }
 
 
     </style>
@@ -60,23 +63,20 @@
 <div id="map"></div>
 <div class="info-panel">
     <h4>Visits</h4>
-    <p><span id="total"></span></p>
-    <p><span id="within"></span></p>
-    <p><span id="percent-within"></span></p>
-
 </div>
 <script>
 
     window.onload = function() {
 
         const map = L.map('map').setView([39.8, -98.5], 5);
-        let ptsWithin;
-        let pctWithin;
-        let totalFT = 0;
-        let withinFT;
-        let totalEle = document.getElementById("total");
-        let withinEle = document.getElementById("within");
-        let pctWithinEle = document.getElementById("percent-within");
+        let ptsWithin = [];
+        let pctWithin = [];
+        let totalFT= [];
+        let withinFT = [];
+        const colors = ['#66c2a5','#fc8d62','#8da0cb','#e78ac3','#a6d854','#ffd92f'];
+        let totalEle = [];
+        let withinEle = [];
+        let pctWithinEle = [];
 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
             attribution:'&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -89,7 +89,9 @@
         let drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
 
-        let placerDotDensity;
+        let layersLoaded = -1;
+        let firstTime = true;
+        let placerDotDensity = [];
 
         const drawControl = new L.Control.Draw({
             draw: {
@@ -123,32 +125,34 @@
         });
 
         map.on('draw:deleted', function (e) {
-            withinEle.innerHTML = "";
-            pctWithinEle.innerHTML = "";
+            for (let i = 0; i <= layersLoaded; i++) {
+                withinEle[i].innerHTML = "";
+                pctWithinEle[i].innerHTML = "";
+            }
         });
 
         function updatePtsWithin() {
-            const placerDotDensityGeoJSON = placerDotDensity.toGeoJSON();
+
             const drawnItemsGeoJSON = drawnItems.toGeoJSON();
+            for (let i = 0; i <= layersLoaded; i++) {
+                const placerDotDensityGeoJSON = placerDotDensity[i].toGeoJSON();
+                ptsWithin[i] = turf.pointsWithinPolygon(placerDotDensityGeoJSON, drawnItemsGeoJSON);
+                withinFT[i] = 0;
+                for (let j = 0; j < ptsWithin[i].features.length; j++) {
+                    withinFT[i] = withinFT[i] + +(ptsWithin[i].features[j].properties.foottraffic);
+                }
+                pctWithin[i] = (withinFT[i] / totalFT[i]) * 100;
+                pctWithin[i] =  pctWithin[i].toFixed(1);
+                withinEle[i].innerHTML = "Within: " + withinFT[i].toLocaleString();
+                pctWithinEle[i].innerHTML = "Percent Within: " + pctWithin[i] + "%";
 
-            ptsWithin = turf.pointsWithinPolygon(placerDotDensityGeoJSON, drawnItemsGeoJSON);
-
-            withinFT = 0;
-            for (let i = 0; i < ptsWithin.features.length; i++) {
-                withinFT = withinFT + +(ptsWithin.features[i].properties.foottraffic);
             }
 
-            pctWithin = (withinFT / totalFT) * 100;
-            pctWithin =  pctWithin.toFixed(1);
-
-            withinEle.innerHTML = "Within: " + withinFT.toLocaleString();
-            pctWithinEle.innerHTML = "Percent Within: " + pctWithin + "%";
         }
 
         
         // Import KMLs
         const style = {
-            color: 'rgb(94, 99, 229)',
             opacity: 0.7,
             fillOpacity: 0.7,
             weight: 0.5,
@@ -165,17 +169,40 @@
             layerOptions: {
                 style: style,
                 pointToLayer: function (data, latlng) {
-                    totalFT = totalFT + +(data.properties.foottraffic);
+                    if (firstTime) {
+                        layersLoaded++;
+                        firstTime = false;
+                    }
+                    if (!totalFT[layersLoaded]) {
+                        totalFT[layersLoaded] = 0
+                    }
+                    style.color = colors[layersLoaded]
+                    totalFT[layersLoaded] = totalFT[layersLoaded] + +(data.properties.foottraffic);
                     return L.circleMarker(latlng, {style: style});
                 }
             }
         });
         control.addTo(map);
         control.loader.on('data:loaded', function (e) {
-            placerDotDensity = e.layer;
-            totalEle.innerHTML = "Total: " + totalFT.toLocaleString();
+            createElements();
+            placerDotDensity[layersLoaded] = e.layer;
+            totalEle[layersLoaded].innerHTML = "Total: " + totalFT[layersLoaded].toLocaleString();
+            firstTime = true;
         });
 
+        // create elements as layers are loaded
+        function createElements() {
+            const infoPanel = document.querySelector('.info-panel');
+            const layerDiv = document.createElement('div');
+            layerDiv.style.color = colors[layersLoaded];
+            totalEle[layersLoaded] = document.createElement('p');
+            withinEle[layersLoaded] = document.createElement('p');
+            pctWithinEle[layersLoaded] = document.createElement('p');
+            layerDiv.appendChild(totalEle[layersLoaded]);
+            layerDiv.appendChild(withinEle[layersLoaded]);
+            layerDiv.appendChild(pctWithinEle[layersLoaded]);
+            infoPanel.appendChild(layerDiv);
+        }
     }
 
 </script>
