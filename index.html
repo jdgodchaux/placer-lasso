@@ -73,22 +73,22 @@
         let pctWithin = [];
         let totalFT= [];
         let withinFT = [];
-        const colors = ['#66c2a5','#fc8d62','#8da0cb','#e78ac3','#a6d854','#ffd92f'];
+        const colors = ['#377eb8','#4daf4a','#984ea3','#e41a1c','#ff7f00','#ffff33'];
         let totalEle = [];
         let withinEle = [];
         let pctWithinEle = [];
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
-            attribution:'&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 20,
-            minZoom: 0
-        }).addTo(map);
+        // L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
+        //     attribution:'&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        //     subdomains: 'abcd',
+        //     maxZoom: 20,
+        //     minZoom: 0
+        // }).addTo(map);
 
-        // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        //     maxZoom: 19,
-        //     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        // }).addTo(map);;
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);;
 
         // FeatureGroup is to store editable layers
         let drawnItems = new L.FeatureGroup();
