@@ -8,13 +8,14 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin="anonymous" referrerpolicy="no-referrer"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" integrity="sha512-gc3xjCmIy673V6MyOAZhIW93xhM9ei1I+gLbmFjUHIjocENRsLX/QUE1htk5q1XV2D/iie/VQ8DXI6Vu8bexvQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js" integrity="sha512-ozq8xQKq6urvuU6jNgkfqAmT7jKN2XumbrX1JiB3TnF7tI48DPI4Gy1GXKD/V3EExgAs1V+pRO7vwtS1LHg0Gw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
     <script src="https://unpkg.com/togeojson@0.16.0"></script>
     <script src="https://unpkg.com/leaflet-filelayer@1.2.0"></script>
     <script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
     <style>
     html, body {
@@ -78,30 +79,36 @@
         let withinEle = [];
         let pctWithinEle = [];
 
-        // L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
-        //     attribution:'&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        //     subdomains: 'abcd',
-        //     maxZoom: 20,
-        //     minZoom: 0
-        // }).addTo(map);
-
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);;
+        }).addTo(map);
 
         // FeatureGroup is to store editable layers
         let drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
 
+        let fiveMileRing = new L.FeatureGroup();
+        map.addLayer(fiveMileRing);
+
         let layersLoaded = -1;
         let firstTime = true;
         let placerDotDensity = [];
 
+        L.Control.geocoder({position: 'topleft', defaultMarkGeocode: false})
+        .on('markgeocode', function(e) {
+            console.log(e.geocode.center);
+            const marker = L.marker(e.geocode.center);
+            drawnItems.addLayer(marker);
+            drawFiveMileRing(marker);
+            map.setView(e.geocode.center, 11);
+        })
+        .addTo(map);
+
         const drawControl = new L.Control.Draw({
             draw: {
                 polygon: true,
-                marker: false,
+                marker: true,
                 circle: false,
                 circlemarker: false,
                 rectangle: false,
@@ -116,13 +123,24 @@
 
         // draw tool listeners
         map.on('draw:created', function (e) {
-            const layer = e.layer;
-            drawnItems.addLayer(layer);
-            updatePtsWithin();
+            if (e.layerType == 'marker') {
+                // draw 5 mile ring
+                drawFiveMileRing(e.layer);
+                drawnItems.addLayer(e.layer);
+            } else {
+                drawnItems.addLayer(e.layer);
+                updatePtsWithin();
+            }
         });
 
         map.on('draw:edited', function (e) {
-            updatePtsWithin();
+            e.layers.eachLayer(function (layer) {
+                if (layer instanceof L.Marker){
+                    drawFiveMileRing(layer);
+                } else {
+                    updatePtsWithin();
+                }
+            });            
         });
 
         map.on('draw:editvertex', function (e) {
@@ -130,15 +148,27 @@
         });
 
         map.on('draw:deleted', function (e) {
-            for (let i = 0; i <= layersLoaded; i++) {
-                withinEle[i].innerHTML = "";
-                pctWithinEle[i].innerHTML = "";
-            }
+            e.layers.eachLayer(function (layer) {
+                if (layer instanceof L.Marker){
+                    fiveMileRing.clearLayers();
+                } else {
+                    for (let i = 0; i <= layersLoaded; i++) {
+                        withinEle[i].innerHTML = "";
+                        pctWithinEle[i].innerHTML = "";
+                    }
+                }
+            });
+
         });
 
         function updatePtsWithin() {
-
-            const drawnItemsGeoJSON = drawnItems.toGeoJSON();
+            let drawnItemsGeoJSON;
+            drawnItems.eachLayer(function (layer) {
+                if (layer instanceof L.Polygon){
+                    drawnItemsGeoJSON = layer.toGeoJSON();
+                }
+            });
+            
             for (let i = 0; i <= layersLoaded; i++) {
                 const placerDotDensityGeoJSON = placerDotDensity[i].toGeoJSON();
                 ptsWithin[i] = turf.pointsWithinPolygon(placerDotDensityGeoJSON, drawnItemsGeoJSON);
@@ -152,6 +182,23 @@
                 pctWithinEle[i].innerHTML = "Percent Within: " + pctWithin[i] + "%";
 
             }
+
+        }
+
+        const styleCircle = {
+            opacity: 0.7,
+            color: "#333333",
+            fillOpacity: 0.2,
+            fillColor: "#333333",
+            weight: 0.5,
+        };
+
+        function drawFiveMileRing(layer) {
+            fiveMileRing.clearLayers();
+            // get center of drawn marker
+            const latLngCenterFMR = layer.getLatLng()
+            const fiveMileRingCircle = L.circle(latLngCenterFMR, 8046.72, styleCircle)
+            fiveMileRing.addLayer(fiveMileRingCircle);
 
         }
 
