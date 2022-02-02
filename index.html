@@ -16,6 +16,10 @@
     <script src="https://unpkg.com/leaflet-filelayer@1.2.0"></script>
     <script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="tokml.js"></script>
+
+
+    
 
     <style>
     html, body {
@@ -64,6 +68,7 @@
 <div id="map"></div>
 <div class="info-panel">
     <h4>Visits</h4>
+    <div id="downloadLink"></div>
 </div>
 <script>
 
@@ -130,6 +135,7 @@
             } else {
                 drawnItems.addLayer(e.layer);
                 updatePtsWithin();
+                createDownloadLink();
             }
         });
 
@@ -156,10 +162,22 @@
                         withinEle[i].innerHTML = "";
                         pctWithinEle[i].innerHTML = "";
                     }
+                    downloadDiv.innerHTML = "";
                 }
             });
 
         });
+
+        const downloadDiv = document.querySelector('#downloadLink');
+        downloadDiv.addEventListener("click",function(e){
+            drawnItems.eachLayer(function (layer) {
+                if (layer instanceof L.Polygon){
+                    drawnItemsGeoJSON = layer.toGeoJSON();
+                    const kml = tokml(drawnItemsGeoJSON);
+                    save("drawn_area.kml", kml)
+                }
+            });
+        },false);
 
         function updatePtsWithin() {
             let drawnItemsGeoJSON;
@@ -255,6 +273,29 @@
             layerDiv.appendChild(pctWithinEle[layersLoaded]);
             infoPanel.appendChild(layerDiv);
         }
+
+        function createDownloadLink(){
+            const downloadLink = document.createElement('a');
+            downloadLink.setAttribute('href', '#');
+            downloadLink.innerHTML = "Download KML";
+            downloadDiv.appendChild(downloadLink);
+        }
+
+        function save(filename, data) {
+            const blob = new Blob([data], {type: 'application/vnd.google-earth.kml+xml'});
+            if(window.navigator.msSaveOrOpenBlob) {
+                window.navigator.msSaveBlob(blob, filename);
+            }
+            else{
+                const elem = window.document.createElement('a');
+                elem.href = window.URL.createObjectURL(blob);
+                elem.download = filename;        
+                document.body.appendChild(elem);
+                elem.click();        
+                document.body.removeChild(elem);
+            }
+        }
+
     }
 
 </script>
