@@ -135,7 +135,10 @@
             } else {
                 drawnItems.addLayer(e.layer);
                 updatePtsWithin();
-                createDownloadLink();
+                if (downloadDiv.childNodes.length == 0) {
+                    createDownloadLink();
+                }
+                
             }
         });
 
@@ -231,7 +234,7 @@
         };
         L.Control.FileLayerLoad.LABEL = '<img class="icon" src="https://makinacorpus.github.io/Leaflet.FileLayer/folder.svg" alt="file icon"/>';
         control = L.Control.fileLayerLoad({
-            fileSizeLimit: 20480,
+            fileSizeLimit: 50000,
             fitBounds: true,
             formats: [
                 '.kml'
