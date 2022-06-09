@@ -67,7 +67,7 @@
 
 <div id="map"></div>
 <div class="info-panel">
-    <h4>Visits</h4>
+    <h4 id="h4_title"></h4>
     <div id="downloadLink"></div>
 </div>
 <script>
@@ -83,6 +83,7 @@
         let totalEle = [];
         let withinEle = [];
         let pctWithinEle = [];
+        let h4_title = document.getElementById("h4_title");
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
@@ -195,7 +196,12 @@
                 ptsWithin[i] = turf.pointsWithinPolygon(placerDotDensityGeoJSON, drawnItemsGeoJSON);
                 withinFT[i] = 0;
                 for (let j = 0; j < ptsWithin[i].features.length; j++) {
-                    withinFT[i] = withinFT[i] + +(ptsWithin[i].features[j].properties.foottraffic);
+                    if (ptsWithin[i].features[j].properties.foottraffic) {
+                        withinFT[i] = withinFT[i] + +(ptsWithin[i].features[j].properties.foottraffic);
+                    } else {
+                        withinFT[i] = withinFT[i] + +(ptsWithin[i].features[j].properties.unique_customers);
+                    }
+                    
                 }
                 pctWithin[i] = (withinFT[i] / totalFT[i]) * 100;
                 pctWithin[i] =  pctWithin[i].toFixed(1);
@@ -250,7 +256,14 @@
                         totalFT[layersLoaded] = 0
                     }
                     style.color = colors[layersLoaded]
-                    totalFT[layersLoaded] = totalFT[layersLoaded] + +(data.properties.foottraffic);
+                    if (data.properties.foottraffic) {
+                        totalFT[layersLoaded] = totalFT[layersLoaded] + +(data.properties.foottraffic);
+                        h4_title.innerHTML = "Visits";
+                    } else {
+                        totalFT[layersLoaded] = totalFT[layersLoaded] + +(data.properties.unique_customers);
+                        h4_title.innerHTML = "Visitors";
+                    }
+                    
                     return L.circleMarker(latlng, {style: style});
                 }
             }
