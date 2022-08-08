@@ -186,9 +186,11 @@
         function updatePtsWithin() {
             let drawnItemsGeoJSON;
             drawnItems.eachLayer(function (layer) {
-                if (layer instanceof L.Polygon){
+                console.log(layer instanceof L.GeoJSON);
+                if (layer instanceof L.Polygon || layer instanceof L.GeoJSON){
                     drawnItemsGeoJSON = layer.toGeoJSON();
                 }
+
             });
             
             for (let i = 0; i <= layersLoaded; i++) {
@@ -238,8 +240,8 @@
             clickable: false,
             radius: 2
         };
-        L.Control.FileLayerLoad.LABEL = '<img class="icon" src="https://makinacorpus.github.io/Leaflet.FileLayer/folder.svg" alt="file icon"/>';
-        control = L.Control.fileLayerLoad({
+        L.Control.FileLayerLoad.LABEL = '<img class="icon" src="map_marker.svg" alt="file icon"/>';
+        const control = L.Control.fileLayerLoad({
             fileSizeLimit: 50000,
             fitBounds: true,
             formats: [
@@ -274,6 +276,34 @@
             placerDotDensity[layersLoaded] = e.layer;
             totalEle[layersLoaded].innerHTML = "Total: " + totalFT[layersLoaded].toLocaleString();
             firstTime = true;
+        });
+
+        const style_clip = {
+            opacity: 0.7,
+            fillOpacity: 0.7,
+            weight: 0.5,
+            clickable: false
+        };
+
+        L.Control.FileLayerLoad.LABEL = '<img class="icon" src="map_polygon.svg" alt="file icon"/>';
+        const control_clip = L.Control.fileLayerLoad({
+            fileSizeLimit: 50000,
+            fitBounds: true,
+            formats: [
+                '.kml'
+            ],
+            layerOptions: {
+                style: style_clip
+            }
+        });
+
+        control_clip.addTo(map);
+        control_clip.loader.on('data:loaded', function (e) {
+            drawnItems.addLayer(e.layer);
+            updatePtsWithin();
+            if (downloadDiv.childNodes.length == 0) {
+                createDownloadLink();
+            }
         });
 
         // create elements as layers are loaded
