@@ -198,11 +198,12 @@
                 ptsWithin[i] = turf.pointsWithinPolygon(placerDotDensityGeoJSON, drawnItemsGeoJSON);
                 withinFT[i] = 0;
                 for (let j = 0; j < ptsWithin[i].features.length; j++) {
-                    if (ptsWithin[i].features[j].properties.foottraffic) {
-                        withinFT[i] = withinFT[i] + +(ptsWithin[i].features[j].properties.foottraffic);
-                    } else {
-                        withinFT[i] = withinFT[i] + +(ptsWithin[i].features[j].properties.unique_customers);
-                    }
+                    // if (ptsWithin[i].features[j].properties.foottraffic) {
+                    //     withinFT[i] = withinFT[i] + +(ptsWithin[i].features[j].properties.foottraffic);
+                    // } else {
+                    //     withinFT[i] = withinFT[i] + +(ptsWithin[i].features[j].properties.unique_customers);
+                    // }
+                    withinFT[i] = withinFT[i] + 50;
                     
                 }
                 pctWithin[i] = (withinFT[i] / totalFT[i]) * 100;
@@ -258,13 +259,16 @@
                         totalFT[layersLoaded] = 0
                     }
                     style.color = colors[layersLoaded]
-                    if (data.properties.foottraffic) {
-                        totalFT[layersLoaded] = totalFT[layersLoaded] + +(data.properties.foottraffic);
-                        h4_title.innerHTML = "Visits";
-                    } else {
-                        totalFT[layersLoaded] = totalFT[layersLoaded] + +(data.properties.unique_customers);
-                        h4_title.innerHTML = "Visitors";
-                    }
+                    console.log(data);
+                    // if (data.properties.foottraffic) {
+                    //     totalFT[layersLoaded] = totalFT[layersLoaded] + +(data.properties.foottraffic);
+                    //     h4_title.innerHTML = "Visits";
+                    // } else {
+                    //     totalFT[layersLoaded] = totalFT[layersLoaded] + +(data.properties.unique_customers);
+                    //     h4_title.innerHTML = "Visitors";
+                    // }
+                    totalFT[layersLoaded] = totalFT[layersLoaded] + 50;
+                    h4_title.innerHTML = "Visits";
                     
                     return L.circleMarker(latlng, {style: style});
                 }
